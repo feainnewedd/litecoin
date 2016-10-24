@@ -719,7 +719,7 @@ bool AppInit2(boost::thread_group& threadGroup)
         if (nFeePerK > nHighTransactionFeeWarning)
             InitWarning(_("Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction."));
         payTxFee = CFeeRate(nFeePerK, 1000);
-        if (payTxFee < ::minRelayTxFee)
+        if (payTxFee < ::minRelayTxFee || payTxFee.GetFeePerK() < MIN_TX_FEE)
         {
             return InitError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s' (must be at least %s)"),
                                        mapArgs["-paytxfee"], ::minRelayTxFee.ToString()));
@@ -738,6 +738,18 @@ bool AppInit2(boost::thread_group& threadGroup)
             return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
                                        mapArgs["-maxtxfee"], ::minRelayTxFee.ToString()));
         }
+    }
+    if (mapArgs.count("-reservebalance"))
+    {
+        CAmount nReserveBalance = 0;
+        if (!ParseMoney(mapArgs["-reservebalance"], nReserveBalance))
+            return InitError(strprintf(_("Invalid amount for -reservebalance=<amount>: '%s'"), mapArgs["-reservebalance"]));
+    }
+    if (mapArgs.count("-checkpointkey")) // checkpoint master priv key
+    {
+        if (!CheckpointsSync::SetCheckpointPrivKey(GetArg("-checkpointkey", "")))
+            return InitError(_("Unable to sign checkpoint, wrong checkpointkey?\n"));
+        else LogPrintf("Setting checkpoint private key is successful\n");
     }
     nTxConfirmTarget = GetArg("-txconfirmtarget", 1);
     bSpendZeroConfChange = GetArg("-spendzeroconfchange", true);
@@ -1295,6 +1307,8 @@ bool AppInit2(boost::thread_group& threadGroup)
     // Generate coins in the background
     if (pwalletMain)
         GenerateBitcoins(GetBoolArg("-gen", false), pwalletMain, GetArg("-genproclimit", 1));
+    if (GetBoolArg("-stakegen", true))
+        MintStake(threadGroup, pwalletMain);
 #endif
 
     // ********************************************************* Step 11: finished

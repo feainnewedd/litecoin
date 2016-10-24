@@ -127,6 +127,15 @@ public:
         nTargetSpacing = 2.5 * 60; // 2.5 minutes
         nMaxTipAge = 24 * 60 * 60;
 
+        //PoS spacing = nStakeTargetSpacing
+        //PoW spacing = depends on how much PoS block are between last two PoW blocks, with maximum value = nTargetSpacingMax
+        nCoinbaseMaturity = 12;
+        nStakeTargetSpacing = 2 * 60;
+        nTargetSpacingMax = 12 * nStakeTargetSpacing;
+        nStakeMinAge = 60 * 60 * 24 * 30;             // minimum age for coin age
+        nStakeMaxAge = 60 * 60 * 24 * 90;             // stake age of full weight
+        nStakeModifierInterval = 6 * 60 * 60;         // time to elapse before new modifier is computed
+
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
          * be spent as it did not originally exist in the database.
@@ -139,6 +148,7 @@ public:
          */
         const char* pszTimestamp = "NY Times 05/Oct/2011 Steve Jobs, Apple’s Visionary, Dies at 56";
         CMutableTransaction txNew;
+        txNew.nTime = 1317972665;
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -212,6 +222,10 @@ public:
         nTargetTimespan = 3.5 * 24 * 60 * 60; // 3.5 days
         nTargetSpacing = 2.5 * 60; // 2.5 minutes
         nMaxTipAge = 0x7fffffff;
+
+        nCoinbaseMaturity = 1;
+        nStakeMinAge = 60 * 60 * 24;        // test net min age is 1 day
+        nStakeModifierInterval = 60 * 20;   // test net modifier interval is 20 minutes
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1486949366;

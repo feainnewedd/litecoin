@@ -9,6 +9,7 @@
 #include "crypto/scrypt.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
+#include "kernel.h"
 
 uint256 CBlockHeader::GetHash() const
 {
@@ -114,6 +115,15 @@ uint256 CBlock::CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMer
         nIndex >>= 1;
     }
     return hash;
+}
+
+unsigned int CBlock::GetStakeEntropyBit(int32_t height) const
+{
+    unsigned int nEntropyBit = 0;
+    nEntropyBit = GetHash().GetLow64() & 1llu;// last bit of block hash
+    if (fDebug && GetBoolArg("-printstakemodifier", false))
+        LogPrintf("GetStakeEntropyBit: nTime=%u hashBlock=%s entropybit=%d\n", nTime, GetHash().ToString(), nEntropyBit);
+    return nEntropyBit;
 }
 
 std::string CBlock::ToString() const

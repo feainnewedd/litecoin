@@ -105,6 +105,9 @@ public slots:
     /** Show progress dialog e.g. for rescan */
     void showProgress(const QString &title, int nProgress);
 
+    /** Unlock|Lock wallet when clicking on icon */
+    void on_labelEncryptionIcon_clicked();
+
 signals:
     /** Signal that we want to show the main window */
     void showNormalIfMinimized();

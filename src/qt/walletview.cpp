@@ -93,6 +93,8 @@ void WalletView::setBitcoinGUI(BitcoinGUI *gui)
 
         // Pass through transaction notifications
         connect(this, SIGNAL(incomingTransaction(QString,int,CAmount,QString,QString)), gui, SLOT(incomingTransaction(QString,int,CAmount,QString,QString)));
+
+        connect(gui->labelEncryptionIcon, SIGNAL(clicked()), this, SLOT(on_labelEncryptionIcon_clicked()));
     }
 }
 
@@ -306,4 +308,29 @@ void WalletView::showProgress(const QString &title, int nProgress)
     }
     else if (progressDialog)
         progressDialog->setValue(nProgress);
+}
+
+extern std::string strMintWarning;
+
+void WalletView::on_labelEncryptionIcon_clicked()
+{
+    if(!walletModel)
+        return;
+
+    if (walletModel->getEncryptionStatus() == WalletModel::Unlocked)
+    {
+        walletModel->setWalletLocked(true);
+        strMintWarning = "Info: Minting suspended due to locked wallet.";
+        uiInterface.NotifyAlertChanged(0, CT_NEW);
+    }
+    else
+    {
+        AskPassphraseDialog dlg(AskPassphraseDialog::UnlockExtended, this);
+        dlg.setModel(walletModel);
+        if (dlg.exec() == QDialog::Accepted)
+        {
+            strMintWarning = "";
+            uiInterface.NotifyAlertChanged(0, CT_NEW);
+        }
+    }
 }

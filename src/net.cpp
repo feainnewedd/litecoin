@@ -69,6 +69,7 @@ namespace {
 bool fDiscover = true;
 bool fListen = true;
 uint64_t nLocalServices = NODE_NETWORK;
+CAddress addrSeenByPeer(CService("0.0.0.0", 0), nLocalServices);
 CCriticalSection cs_mapLocalHost;
 map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfReachable[NET_MAX] = {};
@@ -1992,6 +1993,7 @@ CNode::CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn, bool fIn
     hashContinue = 0;
     nStartingHeight = -1;
     fGetAddr = false;
+    hashCheckpointKnown = 0;
     fRelayTxes = false;
     setInventoryKnown.max_size(SendBufferSize() / 1000);
     pfilter = new CBloomFilter();

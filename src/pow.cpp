@@ -5,20 +5,31 @@
 
 #include "pow.h"
 
+#include "bignum.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "primitives/block.h"
 #include "uint256.h"
 #include "util.h"
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
+#include <algorithm>
+
+// find last block index up to pindex
+const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
+{
+    while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
+        pindex = pindex->pprev;
+    return pindex;
+}
+
+unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, bool fProofOfStake)
 {
     unsigned int nProofOfWorkLimit = Params().ProofOfWorkLimit().GetCompact();
 
     // Genesis block
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
-
+/*
     // Only change once per interval
     if ((pindexLast->nHeight+1) % Params().Interval() != 0)
     {
@@ -77,12 +88,33 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
     if (bnNew > Params().ProofOfWorkLimit())
         bnNew = Params().ProofOfWorkLimit();
+*/
 
-    /// debug print
-    LogPrintf("GetNextWorkRequired RETARGET\n");
-    LogPrintf("Params().TargetTimespan() = %d    nActualTimespan = %d\n", Params().TargetTimespan(), nActualTimespan);
-    LogPrintf("Before: %08x  %s\n", pindexLast->nBits, bnOld.ToString());
-    LogPrintf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.ToString());
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+    if (pindexPrev->pprev == NULL)
+        return Params().ProofOfWorkLimit().GetCompact(); // first block
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+    if (pindexPrevPrev->pprev == NULL)
+        return Params().ProofOfWorkLimit().GetCompact(); // second block
+
+    int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+
+    // target change every block
+    // retarget with exponential moving toward target spacing
+    CBigNum bnNew;
+    bnNew.SetCompact(pindexPrev->nBits);
+
+    int64_t nSpacingRatio = std::max((int64_t)10, Params().StakeTargetSpacing());
+
+    int64_t nTargetSpacing = fProofOfStake? Params().StakeTargetSpacing() : std::min(Params().TargetSpacingMax(), nSpacingRatio * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+    int64_t nInterval = Params().TargetTimespan() / nTargetSpacing;
+
+    int n = fProofOfStake ? 1 : 3;
+    bnNew *= ((nInterval - n) * nTargetSpacing + (n + 1) * nActualSpacing);
+    bnNew /= ((nInterval + 1) * nTargetSpacing);
+
+    if (bnNew > CBigNum(Params().ProofOfWorkLimit()))
+        bnNew = CBigNum(Params().ProofOfWorkLimit());
 
     return bnNew.GetCompact();
 }
@@ -104,7 +136,7 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 
     // Check proof of work matches claimed amount
     if (hash > bnTarget)
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+        return error("CheckProofOfWork() : hash doesn't match nBits\nhash = %s\nbnTa = %s", hash.GetHex(), bnTarget.GetHex());
 
     return true;
 }
@@ -121,5 +153,5 @@ uint256 GetBlockProof(const CBlockIndex& block)
     // as it's too large for a uint256. However, as 2**256 is at least as large
     // as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
     // or ~bnTarget / (nTarget+1) + 1.
-    return (~bnTarget / (bnTarget + 1)) + 1;
+    return block.IsProofOfStake() ? (~bnTarget / (bnTarget + 1)) + 1 : 1;
 }

@@ -139,7 +139,10 @@ BITCOIN_CORE_H = \
   wallet.h \
   wallet_ismine.h \
   walletdb.h \
-  compat/sanity.h
+  compat/sanity.h \
+  bignum.h \
+  uint256hm.h \
+  kernel.h
 
 JSON_H = \
   json/json_spirit.h \
@@ -182,9 +185,9 @@ libbitcoin_server_a_SOURCES = \
   rpcrawtransaction.cpp \
   rpcserver.cpp \
   script/sigcache.cpp \
-  timedata.cpp \
   txdb.cpp \
   txmempool.cpp \
+  kernel.cpp \
   $(JSON_H) \
   $(BITCOIN_CORE_H)
 
@@ -271,6 +274,7 @@ libbitcoin_util_a_SOURCES = \
   random.cpp \
   rpcprotocol.cpp \
   sync.cpp \
+  timedata.cpp \
   uint256.cpp \
   util.cpp \
   utilstrencodings.cpp \

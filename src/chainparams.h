@@ -68,8 +68,14 @@ public:
     bool RequireStandard() const { return fRequireStandard; }
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetSpacing() const { return nTargetSpacing; }
-    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
+    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }    
     int64_t MaxTipAge() const { return nMaxTipAge; }
+    int64_t CoinbaseMaturity() const { return nCoinbaseMaturity; }
+    int64_t StakeTargetSpacing() const { return nStakeTargetSpacing; }
+    int64_t TargetSpacingMax() const { return nTargetSpacingMax; }
+    int64_t StakeMinAge() const { return nStakeMinAge; }
+    int64_t StakeMaxAge() const { return nStakeMaxAge; }
+    int64_t StakeModifierInterval() const { return nStakeModifierInterval; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
     bool MineBlocksOnDemand() const { return fMineBlocksOnDemand; }
     /** In the future use NetworkIDString() for RPC fields */
@@ -97,9 +103,15 @@ protected:
     int nRejectBlockOutdatedMajority;
     int nToCheckBlockUpgradeMajority;
     int64_t nTargetTimespan;
-    int64_t nTargetSpacing;
+    int64_t nTargetSpacing;    
     int nMinerThreads;
     long nMaxTipAge;
+    int64_t nCoinbaseMaturity;
+    int64_t nStakeTargetSpacing;
+    int64_t nTargetSpacingMax;
+    int64_t nStakeMinAge;
+    int64_t nStakeMaxAge;
+    int64_t nStakeModifierInterval;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     CBaseChainParams::Network networkID;

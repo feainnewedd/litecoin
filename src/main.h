@@ -45,6 +45,7 @@ class CInv;
 class CScriptCheck;
 class CValidationInterface;
 class CValidationState;
+class CKeyStore;
 
 struct CBlockTemplate;
 struct CNodeStateStats;
@@ -113,6 +114,13 @@ static const unsigned char REJECT_DUST = 0x41;
 static const unsigned char REJECT_INSUFFICIENTFEE = 0x42;
 static const unsigned char REJECT_CHECKPOINT = 0x43;
 
+static const CAmount MAX_MINT_PROOF_OF_WORK = 5020 * COIN;
+static const CAmount MIN_TXOUT_AMOUNT = MIN_TX_FEE;
+static const int STAKE_MIN_AGE = 60 * 60 * 24 * 30;      // minimum age for coin age
+static const int64_t nMaxClockDrift = 2 * 60 * 60;       // two hours
+
+extern std::string strMintWarning;
+
 struct BlockHasher
 {
     size_t operator()(const uint256& hash) const { return hash.GetLow64(); }
@@ -125,6 +133,7 @@ typedef boost::unordered_map<uint256, CBlockIndex*, BlockHasher> BlockMap;
 extern BlockMap mapBlockIndex;
 extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockSize;
+extern int64_t nLastCoinStakeSearchInterval;
 extern const std::string strMessageMagic;
 extern int64_t nTimeBestReceived;
 extern CWaitableCriticalSection csBestBlock;
@@ -205,8 +214,11 @@ std::string GetWarnings(std::string strFor);
 /** Retrieve a transaction (from memory pool, or from disk, if possible) */
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock, bool fAllowSlow = false);
 /** Find the best known block, and make it the tip of the block chain */
-bool ActivateBestChain(CValidationState &state, CBlock *pblock = NULL);
+bool ActivateBestChain(CValidationState &state, CBlock *pblock = NULL, CBlockIndex *pindexSwitchTo = NULL);
 CAmount GetBlockValue(int nHeight, const CAmount& nFees);
+
+CAmount GetProofOfWorkReward(unsigned int nBits);
+CAmount GetProofOfStakeReward(int64_t nCoinAge);
 
 /** Create a new block index entry for a given block hash */
 CBlockIndex * InsertBlockIndex(uint256 hash);
@@ -389,18 +401,22 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
 /** Context-independent validity checks */
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool fCheckPOW = true);
-bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
+bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW = true, bool fCheckMerkleRoot = true, bool fCheckSign = true);
 
 /** Context-dependent validity checks */
-bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, CBlockIndex *pindexPrev);
+bool ContextualCheckBlockHeader(const CBlockHeader& block, bool fProofOfStake, CValidationState& state, CBlockIndex *pindexPrev);
 bool ContextualCheckBlock(const CBlock& block, CValidationState& state, CBlockIndex *pindexPrev);
 
 /** Check a block is completely valid from start to finish (only works on top of our current best block, with cs_main held) */
-bool TestBlockValidity(CValidationState &state, const CBlock& block, CBlockIndex *pindexPrev, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
+bool TestBlockValidity(CValidationState &state, const CBlock& block, CBlockIndex *pindexPrev, bool fCheckPOW = true, bool fCheckMerkleRoot = true, bool fCheckSign = true);
 
 /** Store block on disk. If dbp is provided, the file is known to already reside on disk */
 bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex **pindex, CDiskBlockPos* dbp = NULL);
-bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, CBlockIndex **ppindex= NULL);
+bool AcceptBlockHeader(const CBlockHeader& block, bool fProofOfStake, CValidationState& state, CBlockIndex **ppindex= NULL);
+
+// sign block or check signature
+bool SignBlock(CBlock& block, const CKeyStore& keystore);
+bool CheckBlockSignature(const CBlock& block);
 
 
 
@@ -537,6 +553,9 @@ bool InvalidateBlock(CValidationState& state, CBlockIndex *pindex);
 
 /** Remove invalidity status from a block and its descendants. */
 bool ReconsiderBlock(CValidationState& state, CBlockIndex *pindex);
+
+bool GetCoinAge(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, uint64_t& nCoinAge);
+bool GetCoinAge(const CBlock& block, uint64_t &nCoinAge);
 
 /** The currently-connected chain of blocks. */
 extern CChain chainActive;

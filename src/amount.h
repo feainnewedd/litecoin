@@ -15,6 +15,8 @@ typedef int64_t CAmount;
 
 static const CAmount COIN = 100000000;
 static const CAmount CENT = 1000000;
+static const CAmount SUBCENT = 100;
+static const CAmount MIN_TX_FEE = CENT;
 
 /** No amount larger than this (in satoshi) is valid */
 static const CAmount MAX_MONEY = 84000000 * COIN;
@@ -50,5 +52,7 @@ public:
         READWRITE(nSatoshisPerK);
     }
 };
+
+CAmount GetMinFee(size_t nBytes, size_t nBlockSize=1);
 
 #endif //  BITCOIN_AMOUNT_H

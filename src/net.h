@@ -123,6 +123,7 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer = NULL);
 extern bool fDiscover;
 extern bool fListen;
 extern uint64_t nLocalServices;
+extern CAddress addrSeenByPeer;
 extern uint64_t nLocalHostNonce;
 extern CAddrMan addrman;
 extern int nMaxConnections;
@@ -287,6 +288,7 @@ public:
     mruset<CAddress> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
+    uint256 hashCheckpointKnown; // known sent sync-checkpoint
 
     // inventory based relay
     mruset<CInv> setInventoryKnown;
